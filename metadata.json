@@ -1,0 +1,6 @@
+{
+  "name": "MZ Drive Utilities",
+  "description": "MZ Drive Utilities: A unified cloud suite combining File In Drive Upload and D-VAC (Drive Video to Audio Converter).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
