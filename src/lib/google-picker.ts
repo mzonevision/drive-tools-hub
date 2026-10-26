@@ -161,8 +161,9 @@ export const openPicker = async (
     if (firebaseConfig.apiKey) {
       builder.setDeveloperKey(firebaseConfig.apiKey);
     }
-    if (firebaseConfig.appId) {
-      builder.setAppId(firebaseConfig.appId);
+    // setAppId requires the numeric Project Number (messagingSenderId), not the web appId string
+    if (firebaseConfig.messagingSenderId) {
+      builder.setAppId(firebaseConfig.messagingSenderId);
     }
 
     const picker = builder
