@@ -117,8 +117,14 @@ def process_video_to_mp3(payload: ConversionPayload):
     except HTTPException:
         raise
     except Exception as err:
-        logger.error(f"Unexpected error: {str(err)}")
-        raise HTTPException(status_code=500, detail=str(err))
+        err_str = str(err)
+        logger.error(f"Error during video conversion: {err_str}")
+        if "refresh the access token" in err_str or "invalid_grant" in err_str or "401" in err_str:
+            raise HTTPException(
+                status_code=401,
+                detail="Your Google login session has expired. Please log out and log in again to refresh your session."
+            )
+        raise HTTPException(status_code=500, detail=err_str)
 
     finally:
         # پروسیسنگ ختم ہوتے ہی عارضی فائلوں کو فوری ڈیلیٹ کرنا تاکہ سرور صاف رہے

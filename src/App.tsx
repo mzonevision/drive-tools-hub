@@ -1282,14 +1282,30 @@ const DvacPage = ({
         }
       } catch {}
 
-      const isPermissionErr = 
-        msg.includes('appNotAuthorizedToFile') || 
-        msg.includes('read access to the file') || 
-        msg.includes('not granted the app') ||
-        msg.includes('insufficientFilePermissions') ||
-        (msg.includes('403') && !msg.includes('cannotDownloadFile'));
+      const isSessionExpired = 
+        msg.includes('refresh the access token') ||
+        msg.includes('login session has expired') ||
+        msg.includes('necessary fields') ||
+        msg.includes('invalid_grant') ||
+        msg.includes('401');
 
-      if (isPermissionErr) {
+      const isPermissionErr = 
+        !isSessionExpired && (
+          msg.includes('appNotAuthorizedToFile') || 
+          msg.includes('read access to the file') || 
+          msg.includes('not granted the app') ||
+          msg.includes('insufficientFilePermissions') ||
+          (msg.includes('403') && !msg.includes('cannotDownloadFile'))
+        );
+
+      if (isSessionExpired) {
+        setIsPermissionError(true);
+        setDvacError(
+          lang === 'ur' 
+            ? '⚠️ آپ کا گوگل لاگ ان سیشن ختم (Expire) ہو چکا ہے۔ براہ کرم اوپر دائیں جانب موجود لاگ آؤٹ بٹن پر کلک کر کے دوبارہ لاگ ان کریں۔' 
+            : '⚠️ Your Google login session has expired. Please log out and log in again to refresh your session.'
+        );
+      } else if (isPermissionErr) {
         setIsPermissionError(true);
         setDvacError(t.permRequired);
       } else if (msg.includes('cannotDownloadFile') || msg.includes('cannot be downloaded')) {

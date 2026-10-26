@@ -23,10 +23,30 @@ export interface AppUser {
 
 const TOKEN_KEY = 'mzu_google_drive_access_token_v3';
 const USER_KEY = 'mzu_google_user_v3';
+const TOKEN_TIME_KEY = 'mzu_google_token_time_v3';
+
+// Google OAuth access tokens expire after 60 minutes.
+// We consider them expired after 50 minutes to be safe.
+export const isStoredTokenExpired = (): boolean => {
+  try {
+    const timeStr = sessionStorage.getItem(TOKEN_TIME_KEY);
+    if (!timeStr) return false;
+    const issuedAt = parseInt(timeStr, 10);
+    return Date.now() - issuedAt > 50 * 60 * 1000;
+  } catch {
+    return false;
+  }
+};
 
 let cachedAccessToken: string | null = null;
 try {
-  cachedAccessToken = sessionStorage.getItem(TOKEN_KEY);
+  if (isStoredTokenExpired()) {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_TIME_KEY);
+  } else {
+    cachedAccessToken = sessionStorage.getItem(TOKEN_KEY);
+  }
 } catch (e) {}
 
 /**
@@ -128,6 +148,7 @@ export const signInWithGis = async (): Promise<{ user: AppUser; accessToken: str
           try {
             sessionStorage.setItem(TOKEN_KEY, accessToken);
             sessionStorage.setItem(USER_KEY, JSON.stringify(appUser));
+            sessionStorage.setItem(TOKEN_TIME_KEY, String(Date.now()));
           } catch (e) {}
 
           resolve({ user: appUser, accessToken });
@@ -148,6 +169,16 @@ export const initAuth = (
   onAuthSuccess?: (user: AppUser, token: string) => void,
   onAuthFailure?: () => void
 ) => {
+  // If stored token is older than 50 minutes, purge it immediately
+  if (isStoredTokenExpired()) {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_TIME_KEY);
+    cachedAccessToken = null;
+    if (onAuthFailure) onAuthFailure();
+    return;
+  }
+
   // Check sessionStorage first for immediate restore
   const storedToken = sessionStorage.getItem(TOKEN_KEY);
   const storedUserRaw = sessionStorage.getItem(USER_KEY);
@@ -220,6 +251,7 @@ export const googleSignIn = async (): Promise<{ user: AppUser; accessToken: stri
     try {
       sessionStorage.setItem(TOKEN_KEY, credential.accessToken);
       sessionStorage.setItem(USER_KEY, JSON.stringify(appUser));
+      sessionStorage.setItem(TOKEN_TIME_KEY, String(Date.now()));
     } catch (e) {}
     return { user: appUser, accessToken: cachedAccessToken };
   } catch (error: any) {
@@ -255,5 +287,6 @@ export const logout = async () => {
   try {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_TIME_KEY);
   } catch (e) {}
 };
