@@ -382,7 +382,7 @@ const HubPage = ({
                     {t.directGisBtn}
                   </button>
                   <button
-                    onClick={() => handleLogin(false)}
+                    onClick={() => handleLogin(true)}
                     disabled={isLoggingIn}
                     className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 rounded-xl font-bold text-xs transition-all border border-slate-700 cursor-pointer"
                   >
@@ -394,7 +394,7 @@ const HubPage = ({
 
             {/* Login with Google Button */}
             <button
-              onClick={() => handleLogin(false)}
+              onClick={() => handleLogin(true)}
               disabled={isLoggingIn}
               className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#ea4335] hover:bg-[#d33828] disabled:opacity-75 disabled:cursor-not-allowed text-white rounded-xl font-bold text-base transition-all active:scale-[0.98] shadow-lg shadow-red-500/20 cursor-pointer"
             >
@@ -1531,11 +1531,22 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async (useGisDirect = false) => {
+  const handleLogin = async (useGisDirect = true) => {
     setIsLoggingIn(true);
     setLoginError(null);
     try {
-      const res = useGisDirect ? await signInWithGis() : await googleSignIn();
+      let res = null;
+      if (useGisDirect) {
+        try {
+          res = await signInWithGis();
+        } catch (gisErr: any) {
+          console.warn('Direct Google OAuth failed, attempting Firebase fallback:', gisErr);
+          res = await googleSignIn();
+        }
+      } else {
+        res = await googleSignIn();
+      }
+
       if (res) {
         setUser(res.user);
         setToken(res.accessToken);
@@ -1622,7 +1633,7 @@ export default function App() {
                     token={token} 
                     theme={theme} 
                     lang={lang} 
-                    onReauth={() => handleLogin(false)} 
+                    onReauth={() => handleLogin(true)} 
                   />
                 ) : (
                   <HubPage 
